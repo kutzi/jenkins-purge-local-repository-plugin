@@ -15,7 +15,7 @@
   <f:entry title="Number of builds" field="numberOfBuilds" description="Nr. of builds between purging the repository.">
     <f:textbox clazz="number" />
   </f:entry>
-  <f:entry title="Number of days" field="numberOfDayss" description="Nr. of days between purging the repository.">
+  <f:entry title="Number of days" field="numberOfDays" description="Nr. of days between purging the repository.">
     <f:textbox clazz="number" />
   </f:entry>
 </j:jelly>

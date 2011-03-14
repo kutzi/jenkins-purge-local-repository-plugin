@@ -17,7 +17,11 @@ import hudson.tasks.Maven.ProjectWithMaven;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -31,11 +35,26 @@ public class PurgeLocalRepository extends BuildWrapper {
     private Integer numberOfBuilds;
     private Integer numberOfDays;
     
+    private static final ThreadLocal<DateFormat> DF = new ThreadLocal<DateFormat>() {
+
+        @Override
+        protected DateFormat initialValue() {
+            return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        }
+    };
+    
     @DataBoundConstructor
     public PurgeLocalRepository(String groupIds, Integer numberOfBuilds, Integer numberOfDays) {
+        if (numberOfBuilds != null && numberOfBuilds <= 0) {
+            throw new IllegalArgumentException("number of builds must be > 0");
+        }
+        
+        if (numberOfDays != null && numberOfDays <= 0) {
+            throw new IllegalArgumentException("number of days must be > 0");
+        }
+        
         String grpIds = Util.fixNull(groupIds);
         this.groupIds = Arrays.asList(grpIds.split(","));
-        // TODO: check <= 0
         this.numberOfBuilds = numberOfBuilds;
         this.numberOfDays = numberOfDays;
     }
@@ -127,7 +146,21 @@ public class PurgeLocalRepository extends BuildWrapper {
                 }
             }
             
-            // TODO: do the same for numberOfDays
+            if (this.numberOfDays != null) {
+                String property = props.getProperty("purge.lastDate");
+                try {
+                    Date lastDate = DF.get().parse(property);
+                    Date currentDate = new Date();
+                    
+                    double diffInDays = differenceInDays(currentDate, lastDate); 
+                    if (diffInDays >= this.numberOfDays) {
+                        needsPurge = true;
+                    }
+                    
+                } catch (ParseException e) {
+                    throw new IOException(e);
+                }
+            }
         } else {
             needsPurge = true;
         }
@@ -151,9 +184,16 @@ public class PurgeLocalRepository extends BuildWrapper {
             
             // record last purge
             props.setProperty("purge.lastBuildNumber", "" + build.getNumber());
-            props.setProperty("purge.lastDate", new Date().toGMTString());
+            props.setProperty("purge.lastDate", DF.get().format(new Date()));
             props.store(lastPurgeFile.write(), "settings of the purge-local-repo-plugin");
         }
+    }
+
+    private double differenceInDays(Date currentDate, Date lastDate) {
+        
+        // this may not be perfectly 'correct' regarding DST, but good enough for this case
+        
+        return (currentDate.getTime() - lastDate.getTime()) / (double)(24L*60*60*1000);
     }
 
     @Extension
