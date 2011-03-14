@@ -14,6 +14,7 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.tasks.Maven;
 import hudson.tasks.Maven.ProjectWithMaven;
+import hudson.util.FormValidation;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,6 +29,7 @@ import java.util.Properties;
 
 import org.apache.maven.repository.RepositorySystem;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 
 public class PurgeLocalRepository extends BuildWrapper {
 
@@ -190,7 +192,6 @@ public class PurgeLocalRepository extends BuildWrapper {
     }
 
     private double differenceInDays(Date currentDate, Date lastDate) {
-        
         // this may not be perfectly 'correct' regarding DST, but good enough for this case
         
         return (currentDate.getTime() - lastDate.getTime()) / (double)(24L*60*60*1000);
@@ -201,7 +202,7 @@ public class PurgeLocalRepository extends BuildWrapper {
 
         @Override
         public String getDisplayName() {
-            return "Purges local Maven repositories";
+            return "Purge local Maven repository before build";
         }
 
         @Override
@@ -210,5 +211,28 @@ public class PurgeLocalRepository extends BuildWrapper {
                 || (item instanceof ProjectWithMaven);
         }
         
+        public FormValidation doCheckNumberOfBuilds(@QueryParameter String numberOfBuilds) {
+            return checkIsGreaterZero(numberOfBuilds);
+        }
+
+        public FormValidation doCheckNumberOfDays(@QueryParameter String numberOfDays) {
+            return checkIsGreaterZero(numberOfDays);
+        }
+
+        private FormValidation checkIsGreaterZero(String numberOfBuilds) {
+            if (numberOfBuilds == null) {
+                return FormValidation.ok();
+            }
+            try {
+                int nr = Integer.parseInt(numberOfBuilds);
+                if (nr <= 0) {
+                    return FormValidation.error("Must be > 0!");
+                }
+            } catch (NumberFormatException e) {
+                return FormValidation.error(numberOfBuilds + " is no valid number");
+            }
+            
+            return FormValidation.ok();
+        }
     }
 }
