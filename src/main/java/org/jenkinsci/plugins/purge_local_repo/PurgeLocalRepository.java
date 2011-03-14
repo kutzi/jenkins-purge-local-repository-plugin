@@ -18,7 +18,9 @@ import hudson.tasks.Maven.ProjectWithMaven;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.maven.repository.RepositorySystem;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -33,6 +35,7 @@ public class PurgeLocalRepository extends BuildWrapper {
     public PurgeLocalRepository(String groupIds, Integer numberOfBuilds, Integer numberOfDays) {
         String grpIds = Util.fixNull(groupIds);
         this.groupIds = Arrays.asList(grpIds.split(","));
+        // TODO: check <= 0
         this.numberOfBuilds = numberOfBuilds;
         this.numberOfDays = numberOfDays;
     }
@@ -91,14 +94,14 @@ public class PurgeLocalRepository extends BuildWrapper {
         if (usesPrivateRepository) {
             FilePath repo = build.getWorkspace().child(".repository");
             listener.getLogger().println("Cleaning private repository at " + repo);
-            purgeRepository(repo, listener.getLogger());
+            purgeRepository(repo, build, listener.getLogger());
         }
         
         // note that freestyle projects could theoretically use private AND default repos. Therefore no 'else if' here!
         if (usesDefaultRepository) {
             FilePath repo = new FilePath(RepositorySystem.defaultUserLocalRepository);
             listener.getLogger().println("Cleaning public repository at " + repo);
-            purgeRepository(repo, listener.getLogger());
+            purgeRepository(repo, build, listener.getLogger());
         }
         
         return new Environment() {
@@ -106,20 +109,50 @@ public class PurgeLocalRepository extends BuildWrapper {
     }
 
     
-    private void purgeRepository(FilePath repoRoot, PrintStream logger) throws IOException, InterruptedException {
-        if (this.groupIds.isEmpty()) {
-            logger.println("Purging whole repository!");
-            repoRoot.deleteContents();
-        } else {
-            for (String groupId : this.groupIds) {
-                String[] pathElements = groupId.split("\\.");
-                FilePath groupIdRoot = repoRoot;
-                for (String element : pathElements) {
-                    groupIdRoot = groupIdRoot.child(element);
+    private void purgeRepository(FilePath repoRoot, AbstractBuild build, PrintStream logger) throws IOException, InterruptedException {
+        
+        boolean needsPurge = false;
+        
+        FilePath lastPurgeFile = build.getWorkspace().child(".purgeLocalRepositoryPlugin");
+        Properties props = new Properties();
+        if (lastPurgeFile.exists()) {
+            props.load(lastPurgeFile.read());
+            
+            if (this.numberOfBuilds != null) {
+                String property = props.getProperty("purge.lastBuildNumber");
+                int lastBuildNumber = Integer.parseInt(property);
+                
+                if (build.getNumber() - lastBuildNumber >= this.numberOfBuilds ) {
+                    needsPurge = true;
                 }
-                logger.println("Cleaning: " + groupIdRoot);
-               groupIdRoot.deleteContents();
             }
+            
+            // TODO: do the same for numberOfDays
+        } else {
+            needsPurge = true;
+        }
+        
+        if (needsPurge) {
+            if (this.groupIds.isEmpty()) {
+                logger.println("Purging whole repository!");
+                repoRoot.deleteContents();
+            } else {
+                for (String groupId : this.groupIds) {
+                    String[] pathElements = groupId.split("\\.");
+                    FilePath groupIdRoot = repoRoot;
+                    for (String element : pathElements) {
+                        groupIdRoot = groupIdRoot.child(element);
+                    }
+                    logger.println("Cleaning: " + groupIdRoot);
+                    groupIdRoot.deleteContents();
+                }
+            }
+            
+            
+            // record last purge
+            props.setProperty("purge.lastBuildNumber", "" + build.getNumber());
+            props.setProperty("purge.lastDate", new Date().toGMTString());
+            props.store(lastPurgeFile.write(), "settings of the purge-local-repo-plugin");
         }
     }
 
