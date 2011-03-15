@@ -12,20 +12,19 @@
     so it should be straightforward to find them.
   -->
   <f:section title="Purge local Maven repositories plugin">
-    <!--
-      Optional @help points to the help document HTML. /plugin/maven-purge-local-repo-plugin
-      is mapped to our webapp/ directory, so this is a convenient way to serve
-      static resources.
-    -->
+    <f:entry title="Group IDs" field="groupIds" description="Comma-separated list of groupIds to purge - purges whole repository if empty">
+     <f:textbox />
+    </f:entry>
     <f:entry title="Number of builds"
+      field="numberOfBuilds"
       description="Number of builds between purges"
-      help="/plugin/maven-purge-local-repo-plugin/help-globalConfig.html">
-      <f:textbox name="numberOfBuilds" checked="${descriptor.numberOfBuilds}" />
+      help="/plugin/maven-purge-local-repo-plugin/help-numberOfBuilds.html">
+      <f:textbox name="numberOfBuilds"/>
     </f:entry>
     <f:entry title="Number of days"
-      description="Number of days between purges"
-      help="/plugin/maven-purge-local-repo-plugin/help-globalConfig.html">
-      <f:textbox name="numberOfDays" checked="${descriptor.numberOfDays}" />
+      field="numberOfDays"
+      description="Number of days between purges">
+      <f:textbox name="numberOfDays"/>
     </f:entry>
   </f:section>
 </j:jelly>

@@ -23,6 +23,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -61,21 +62,29 @@ public class PurgeLocalRepository extends BuildWrapper {
             throw new IllegalArgumentException("number of days must be > 0");
         }
         
-        String grpIds = Util.fixNull(groupIds);
-        this.groupIds = Arrays.asList(grpIds.split(","));
+        String grpIds = Util.fixEmptyAndTrim(groupIds);
+        this.groupIds = grpIds != null ? Arrays.asList(grpIds.split(",")) : Collections.<String>emptyList();
         this.numberOfBuilds = numberOfBuilds;
         this.numberOfDays = numberOfDays;
     }
     
     public String getGroupIds() {
+        return listToCsv(this.groupIds);
+    }
+    
+    public static String listToCsv(List<String> list) {
         StringBuilder buf = new StringBuilder();
-        for(String groupId : this.groupIds) {
+        for(String groupId : list) {
             buf.append(groupId).append(",");
         }
         if (buf.length() > 0) {
             buf.deleteCharAt(buf.length() - 1);
         }
         return buf.toString();
+    }
+    
+    private List<String> getActualGroupIds() {
+        return this.groupIds.isEmpty() ? descriptor.getGroupIdsAsList() : this.groupIds;
     }
     
     public Integer getNumberOfBuilds() {
@@ -180,11 +189,11 @@ public class PurgeLocalRepository extends BuildWrapper {
         }
         
         if (needsPurge) {
-            if (this.groupIds.isEmpty()) {
+            if (getActualGroupIds().isEmpty()) {
                 logger.println("Purging whole repository at " + repoRoot); 
                 repoRoot.deleteContents();
             } else {
-                for (String groupId : this.groupIds) {
+                for (String groupId : getActualGroupIds()) {
                     String[] pathElements = groupId.split("\\.");
                     FilePath groupIdRoot = repoRoot;
                     for (String element : pathElements) {
@@ -211,9 +220,14 @@ public class PurgeLocalRepository extends BuildWrapper {
 
     public static final class DescriptorImpl extends BuildWrapperDescriptor {
 
+        private List<String> groupIds;
         private Integer numberOfBuilds;
-
         private Integer numberOfDays;
+        
+        public DescriptorImpl() {
+            super(PurgeLocalRepository.class);
+            load();
+        }
         
         @Override
         public String getDisplayName() {
@@ -229,6 +243,9 @@ public class PurgeLocalRepository extends BuildWrapper {
         @Override
         public boolean configure( StaplerRequest req, JSONObject json ) throws FormException {
             
+            String grpIds = Util.fixEmptyAndTrim( json.getString("groupIds"));
+            this.groupIds = grpIds != null ? Arrays.asList(grpIds.split(",")) : Collections.<String>emptyList();
+            
             String nrOfBuilds = Util.fixEmpty(json.getString("numberOfBuilds"));
             try {
                 this.numberOfBuilds = nrOfBuilds != null ? Integer.valueOf(nrOfBuilds) : null;
@@ -243,7 +260,16 @@ public class PurgeLocalRepository extends BuildWrapper {
                 throw new FormException(nrOfDays + " is no valid number", "numberOfDays");
             }
             
+            save();
             return true;
+        }
+        
+        public String getGroupIds() {
+            return listToCsv(this.groupIds);
+        }
+        
+        public List<String> getGroupIdsAsList() {
+            return this.groupIds;
         }
         
         public Integer getNumberOfBuilds() {
@@ -262,17 +288,17 @@ public class PurgeLocalRepository extends BuildWrapper {
             return checkIsGreaterZero(numberOfDays);
         }
 
-        private FormValidation checkIsGreaterZero(String numberOfBuilds) {
-            if (numberOfBuilds == null) {
+        private FormValidation checkIsGreaterZero(String value) {
+            if (value == null || value.trim().length() == 0) {
                 return FormValidation.ok();
             }
             try {
-                int nr = Integer.parseInt(numberOfBuilds);
+                int nr = Integer.parseInt(value);
                 if (nr <= 0) {
                     return FormValidation.error("Must be > 0!");
                 }
             } catch (NumberFormatException e) {
-                return FormValidation.error(numberOfBuilds + " is no valid number");
+                return FormValidation.error(value + " is no valid number");
             }
             
             return FormValidation.ok();
