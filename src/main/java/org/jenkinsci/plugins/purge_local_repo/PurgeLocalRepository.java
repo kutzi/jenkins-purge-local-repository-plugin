@@ -72,15 +72,8 @@ public class PurgeLocalRepository extends BuildWrapper {
         return listToCsv(this.groupIds);
     }
     
-    public static String listToCsv(List<String> list) {
-        StringBuilder buf = new StringBuilder();
-        for(String groupId : list) {
-            buf.append(groupId).append(",");
-        }
-        if (buf.length() > 0) {
-            buf.deleteCharAt(buf.length() - 1);
-        }
-        return buf.toString();
+    private static String listToCsv(List<String> list) {
+        return Util.join(list, ",");
     }
     
     private List<String> getActualGroupIds() {
