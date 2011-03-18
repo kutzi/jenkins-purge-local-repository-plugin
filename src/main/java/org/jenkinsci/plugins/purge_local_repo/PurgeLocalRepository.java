@@ -17,6 +17,7 @@ import hudson.tasks.Maven;
 import hudson.tasks.Maven.ProjectWithMaven;
 import hudson.util.FormValidation;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.text.DateFormat;
@@ -30,7 +31,6 @@ import java.util.Properties;
 
 import net.sf.json.JSONObject;
 
-import org.apache.maven.repository.RepositorySystem;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -102,7 +102,8 @@ public class PurgeLocalRepository extends BuildWrapper {
         
         boolean usesDefaultRepository = false;
         boolean usesPrivateRepository = false;
-        //TODO: handle case if repo is specified via alternate settings or -Dmaven.local.repo
+        //TODO: handle case if repo is specified via alternate settings or -Dmaven.local.repo// try using the local repository specified on the command line...
+        // String localRepository = System.getProperty( MavenSettingsBuilder.ALT_LOCAL_REPOSITORY_LOCATION ); 
         
         if (build instanceof MavenModuleSetBuild) {
             MavenModuleSetBuild m2Build = (MavenModuleSetBuild) build;
@@ -135,7 +136,12 @@ public class PurgeLocalRepository extends BuildWrapper {
         
         // note that freestyle projects could theoretically use private AND default repos. Therefore no 'else if' here!
         if (usesDefaultRepository) {
-            FilePath repo = new FilePath(RepositorySystem.defaultUserLocalRepository);
+            // see DefaultMavenSettingsBuilder
+            String userHome = System.getProperty( "user.home" );
+            File mavenUserConfigurationDirectory = new File( userHome, ".m2" );
+            File localRepository = new File( mavenUserConfigurationDirectory, "repository"); 
+                    
+            FilePath repo = new FilePath(localRepository);
             purgeRepository(repo, build, listener.getLogger());
         }
         

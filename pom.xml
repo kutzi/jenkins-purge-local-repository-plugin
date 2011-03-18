@@ -1,10 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
+  <!-- <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.401</version><!-- which version of Jenkins is this plugin built against? -->
-  </parent>
+    <version>1.401</version>
+  </parent> -->
+  <parent>
+        <groupId>org.jvnet.hudson.plugins</groupId>
+        <artifactId>plugin</artifactId>
+        <version>1.343</version>
+    </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>maven-purge-local-repo-plugin</artifactId>
@@ -13,9 +18,9 @@
   
   <dependencies>
     <dependency>
-        <groupId>org.jenkins-ci.main</groupId>
+        <groupId>org.jvnet.hudson.main</groupId>
         <artifactId>maven-plugin</artifactId>
-        <version>1.401</version>
+        <version>1.343</version>
         <scope>compile</scope>
     </dependency>
   </dependencies>
