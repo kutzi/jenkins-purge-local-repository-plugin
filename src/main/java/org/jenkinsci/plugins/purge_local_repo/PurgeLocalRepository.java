@@ -16,6 +16,7 @@ import hudson.tasks.BuildWrapperDescriptor;
 import hudson.tasks.Maven;
 import hudson.tasks.Maven.ProjectWithMaven;
 import hudson.util.FormValidation;
+import hudson.util.TimeUnit2;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +40,8 @@ public class PurgeLocalRepository extends BuildWrapper {
 
     private List<String> groupIds;
     private Integer numberOfBuilds;
-    private Integer numberOfDays;
+    private Integer purgeInterval;
+    private TimeUnit2 purgeIntervalUnit;
     
     private static final ThreadLocal<DateFormat> DF = new ThreadLocal<DateFormat>() {
 
@@ -65,7 +67,8 @@ public class PurgeLocalRepository extends BuildWrapper {
         String grpIds = Util.fixEmptyAndTrim(groupIds);
         this.groupIds = grpIds != null ? Arrays.asList(grpIds.split(",")) : Collections.<String>emptyList();
         this.numberOfBuilds = numberOfBuilds;
-        this.numberOfDays = numberOfDays;
+        this.purgeInterval = numberOfDays;
+        this.purgeIntervalUnit = TimeUnit2.DAYS;
     }
     
     public String getGroupIds() {
@@ -89,11 +92,11 @@ public class PurgeLocalRepository extends BuildWrapper {
     }
     
     public Integer getNumberOfDays() {
-        return this.numberOfDays;
+        return Integer.valueOf((int)TimeUnit2.DAYS.convert(this.purgeInterval, this.purgeIntervalUnit));
     }
     
     private Integer getActualNumberOfDays() {
-        return this.numberOfDays != null ? this.numberOfDays : descriptor.getNumberOfDays();
+        return this.purgeInterval != null ? this.purgeInterval : descriptor.getNumberOfDays();
     }
     
     @Override
@@ -221,7 +224,8 @@ public class PurgeLocalRepository extends BuildWrapper {
 
         private List<String> groupIds;
         private Integer numberOfBuilds;
-        private Integer numberOfDays;
+        private Integer purgeInterval;
+        private TimeUnit2 purgeIntervalUnit;
         
         public DescriptorImpl() {
             super(PurgeLocalRepository.class);
@@ -254,10 +258,11 @@ public class PurgeLocalRepository extends BuildWrapper {
             
             String nrOfDays = Util.fixEmpty(json.getString("numberOfDays"));
             try {
-                this.numberOfDays = nrOfDays != null ? Integer.valueOf(nrOfDays) : null;
+                this.purgeInterval = nrOfDays != null ? Integer.valueOf(nrOfDays) : null;
             } catch (NumberFormatException e) {
                 throw new FormException(nrOfDays + " is no valid number", "numberOfDays");
             }
+            this.purgeIntervalUnit = TimeUnit2.DAYS;
             
             save();
             return true;
@@ -276,7 +281,7 @@ public class PurgeLocalRepository extends BuildWrapper {
         }
 
         public Integer getNumberOfDays() {
-            return numberOfDays;
+            return Integer.valueOf((int)TimeUnit2.DAYS.convert(this.purgeInterval, this.purgeIntervalUnit));
         }
         
         public FormValidation doCheckNumberOfBuilds(@QueryParameter String numberOfBuilds) {
