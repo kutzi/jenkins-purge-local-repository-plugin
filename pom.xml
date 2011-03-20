@@ -13,8 +13,27 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>maven-purge-local-repo-plugin</artifactId>
+  <name>Jenkins plugin to purge local Maven repositories</name>
+  <description>Can purge local Maven repositories before builds start</description>
+  <inceptionYear>2011</inceptionYear>
   <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
+  
+    <developers>
+        <developer>
+            <id>kutzi</id>
+            <name>Christoph Kutzinski</name>
+            <email>kutzi@gmx.de</email>
+            <timezone>1</timezone>
+        </developer>
+    </developers>
+  
+    <licenses>
+        <license>
+            <name>MIT license</name>
+            <comments>All source code is under the MIT license.</comments>
+        </license>
+    </licenses>
   
   <dependencies>
     <dependency>
@@ -25,7 +44,7 @@
     </dependency>
   </dependencies>
 
-  <!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
+    <!-- get every artifact through maven.glassfish.org, which proxies all the artifacts that we need -->
   <repositories>
     <repository>
       <id>m.g.o-public</id>
@@ -39,4 +58,11 @@
       <url>http://maven.glassfish.org/content/groups/public/</url>
     </pluginRepository>
   </pluginRepositories>
+  
+    <distributionManagement>
+        <repository>
+          <id>maven.jenkins-ci.org</id>
+          <url>http://maven.jenkins-ci.org:8081/content/repositories/releases/</url>
+        </repository>
+    </distributionManagement>
 </project>
